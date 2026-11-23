@@ -27,7 +27,8 @@ select{padding:7px 9px;min-height:36px}
 .layout{height:100vh;height:100dvh;height:var(--app-height,100vh);display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:9px;padding:9px;max-width:1800px;margin:0 auto;min-height:0}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:10px;min-width:0;min-height:0}
 .panel h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2px 0 3px;text-align:center}
-.tool-strip{display:flex;align-items:center;gap:3px;flex:0 0 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;padding:0 3px}
+.tool-strip{display:flex;align-items:center;gap:3px;flex:1 1 auto;width:auto;min-width:80px;max-width:none;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;padding:0 3px;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:pan-y;}
+.tool-strip.drag-scrolling{cursor:grabbing;}
 .tool-strip::-webkit-scrollbar{display:none}
 .tool{width:34px;height:34px;min-height:34px;flex:none;padding:0;border-radius:8px;gap:0;font-size:17px;color:#eaf0ff;background:#243653;border-color:#3f567b}
 .tool-icon{font-size:18px;line-height:1;display:block}
@@ -36,6 +37,7 @@ select{padding:7px 9px;min-height:36px}
 .workspace-toolbar{display:flex;align-items:center;gap:5px;min-width:0;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain}
 .workspace-toolbar::-webkit-scrollbar{display:none}
 .workspace-toolbar>*{flex:none}
+.workspace-toolbar>#tools{flex:1 1 auto;width:auto;min-width:80px;max-width:none}
 .workspace-toolbar .icon-btn{width:36px;height:34px;min-height:34px;font-size:17px;border-radius:9px;flex:none}
 .toolbar-group{display:flex;align-items:center;gap:4px;flex:none}
 .history-group{padding-right:5px;border-right:1px solid #435a80}
@@ -1550,6 +1552,36 @@ function snapshot(){history.push(JSON.stringify(items));if(history.length>60)his
 function msg(t){$('noticeText').textContent=t;}
 function setTool(t){tool=t;document.querySelectorAll('.tool').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));editorDom.style.cursor=t==='hand'?'grab':'crosshair';if(t!=='select'&&selected){selected=null;renderProps();}draw();}
 document.querySelectorAll('.tool').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
+// Allow the horizontal item/tool palette to be browsed with the mouse wheel or by dragging.
+const toolStrip=$('tools');
+if(toolStrip){
+ toolStrip.addEventListener('wheel',event=>{
+  const delta=Math.abs(event.deltaY)>Math.abs(event.deltaX)?event.deltaY:event.deltaX;
+  if(delta!==0 && toolStrip.scrollWidth>toolStrip.clientWidth){event.preventDefault();toolStrip.scrollLeft+=delta;}
+ },{passive:false});
+ // 左ボタンを押したまま左右へ動かすと横スクロール。クリックだけなら通常どおり選択。
+ let paletteDrag=null, suppressPaletteClick=false;
+ toolStrip.addEventListener('pointerdown',event=>{
+  if(event.pointerType==='mouse' && event.button!==0)return;
+  paletteDrag={id:event.pointerId,startX:event.clientX,startScroll:toolStrip.scrollLeft,moved:false};
+  suppressPaletteClick=false;
+ });
+ window.addEventListener('pointermove',event=>{
+  if(!paletteDrag || event.pointerId!==paletteDrag.id)return;
+  const dx=event.clientX-paletteDrag.startX;
+  if(!paletteDrag.moved && Math.abs(dx)>5){paletteDrag.moved=true;toolStrip.classList.add('drag-scrolling');}
+  if(paletteDrag.moved){toolStrip.scrollLeft=paletteDrag.startScroll-dx;if(event.cancelable)event.preventDefault();}
+ },{passive:false});
+ const finishPaletteDrag=event=>{
+  if(!paletteDrag || event.pointerId!==paletteDrag.id)return;
+  suppressPaletteClick=paletteDrag.moved;paletteDrag=null;toolStrip.classList.remove('drag-scrolling');
+ };
+ window.addEventListener('pointerup',finishPaletteDrag);
+ window.addEventListener('pointercancel',finishPaletteDrag);
+ toolStrip.addEventListener('click',event=>{
+  if(suppressPaletteClick){event.preventDefault();event.stopImmediatePropagation();suppressPaletteClick=false;}
+ },true);
+}
 function typeName(t){return ({platform:'足場',stone:'石ブロック',bossWall:'鉄ブロック',boss:'機械要塞',armorBoss:'アーマー',dragonBoss:'ティアマット',beetle:'スライム',enemySlime:'敵スライム',rabbit:'ウサギ',archer:'アーチャー',witch:'ウィッチ',mage:'魔導士',wisp:'ウィスプ',bat:'コウモリ',bird:'赤い鳥',drone:'ドローン',redDrone:'赤色ドローン',bigDrone:'大型ドローン',bossDoor:'ボス入口',start:'スタート',goal:'ゴール'})[t]||t;}
 function dimensions(it){return ['boss','dragonBoss'].includes(it.type)?{w:4,h:4}:it.type==='armorBoss'?{w:3,h:4}:it.type==='bigDrone'?{w:2,h:2}:it.type==='bossDoor'?{w:2,h:3}:['beetle','enemySlime','rabbit','archer','witch','mage','wisp','bird','bat','drone','redDrone'].includes(it.type)?{w:1,h:1}:it.type==='start'?{w:1,h:2}:it.type==='goal'?{w:2,h:3}:{w:it.w,h:it.h};}
 function maxCam(){return Math.max(0,cols*CELL-editorViewportWidth);}
@@ -1611,7 +1643,25 @@ function removeSelected(){if(!selected)return;snapshot();items=items.filter(a=>a
 $('deleteSelected').onclick=removeSelected;
 $('undoBtn').onclick=()=>{if(!history.length)return;future.push(JSON.stringify(items));items=JSON.parse(history.pop());choose(null);msg('元に戻しました');};
 $('redoBtn').onclick=()=>{if(!future.length)return;history.push(JSON.stringify(items));items=JSON.parse(future.pop());choose(null);msg('やり直しました');};
-$('newBtn').onclick=()=>{if(!confirm('現在のステージを初期状態に戻しますか？'))return;snapshot();items=defaults();nextId=Math.max(...items.map(i=>i.id))+1;cam=0;camY=0;cameraTouched=false;choose(null);draw();focusStart();draw();$('stageName').value='空中';$('worldWidth').value=150;msg('デフォルトステージに戻しました');};
+$('newBtn').onclick=()=>{
+ // Avoid the browser-native confirm dialog: it may be suppressed in embedded previews.
+ const overlay=document.createElement('div');
+ overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(10,20,35,.62);display:flex;align-items:center;justify-content:center;padding:20px;';
+ const panel=document.createElement('div');
+ panel.style.cssText='width:min(340px,100%);background:#fff;color:#17324a;border-radius:14px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.3);font:14px/1.6 system-ui,sans-serif;';
+ const heading=document.createElement('div');heading.textContent='新規ステージ';heading.style.cssText='font-size:18px;font-weight:700;margin-bottom:8px;';
+ const message=document.createElement('div');message.textContent='現在のステージを初期状態に戻します。未保存の変更は失われます。';message.style.marginBottom='18px';
+ const actions=document.createElement('div');actions.style.cssText='display:flex;justify-content:flex-end;gap:8px;';
+ const cancel=document.createElement('button');cancel.type='button';cancel.textContent='キャンセル';
+ cancel.style.cssText='border:1px solid #b8c6d4;background:#f4f7fa;color:#17324a;border-radius:8px;padding:9px 13px;cursor:pointer;';
+ const create=document.createElement('button');create.type='button';create.textContent='新規作成';
+ create.style.cssText='border:0;background:#2563eb;color:white;border-radius:8px;padding:9px 15px;font-weight:700;cursor:pointer;';
+ const close=()=>overlay.remove();
+ cancel.onclick=close;
+ create.onclick=()=>{close();snapshot();items=defaults();nextId=Math.max(...items.map(i=>i.id))+1;cam=0;camY=0;cameraTouched=false;choose(null);draw();focusStart();draw();$('stageName').value='空中';$('worldWidth').value=150;msg('新しいステージを作成しました');};
+ overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
+ actions.append(cancel,create);panel.append(heading,message,actions);overlay.appendChild(panel);document.body.appendChild(overlay);
+};
 $('resizeBtn').onclick=()=>{const n=Math.max(30,Math.min(150,+$('worldWidth').value||75));snapshot();cols=n;items.forEach(clampItem);cam=Math.min(cam,maxCam());draw();updateStats();msg('ステージの横幅を変更しました');};
 $('zoom').onchange=()=>draw();$('gridToggle').onchange=()=>draw();
 function addEditorShape(parent,x,y,w,h,background,extra={}){
@@ -1987,12 +2037,11 @@ function updateGame(){
  const speed=(p.form==='beetle'?6.0:p.form==='wisp'?7.6:p.form==='mage'?4.6:7.0);
  const wispInsideStone=isWispInsideStone(p);
  const collisionSolids=gameSolids().filter(s=>!(p.form==='wisp'&&s.type==='stone'));let horizontalIntent=0;
- if(p.form==='bird'||p.form==='mage'){
+ if(p.form==='bird'){
   let dx=(right?1:0)-(left?1:0),dy=(down?1:0)-(up?1:0),len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;
-  p.vx=dx*speed;p.vy=dy*speed;if(dx)p.facing=Math.sign(dx);if(p.form==='bird'&&keys.Space){if(!p.facingLocked){p.lockedFacing=p.facing;p.facingLocked=true;}p.facing=p.lockedFacing;}else{p.facingLocked=false;if(dx)p.facing=Math.sign(dx);}
+  p.vx=dx*speed;p.vy=dy*speed;if(dx)p.facing=Math.sign(dx);if(keys.Space){if(!p.facingLocked){p.lockedFacing=p.facing;p.facingLocked=true;}p.facing=p.lockedFacing;}else{p.facingLocked=false;if(dx)p.facing=Math.sign(dx);}
   const solids=gameSolids();p.x=Math.max(0,Math.min(gameWorldW-p.w,p.x+p.vx));for(const s of solids)if(gameOverlap(p,s))p.x=p.vx>0?s.x-p.w:s.x+s.w;p.x=Math.max(0,Math.min(gameWorldW-p.w,p.x));
   p.y=Math.max(0,Math.min(GAME_H-p.h,p.y+p.vy));for(const s of solids)if(gameOverlap(p,s))p.y=p.vy>0?s.y-p.h:s.y+s.h;p.y=Math.max(0,Math.min(GAME_H-p.h,p.y));p.onGround=false;
-  if(p.form==='mage'){if(p.shieldTimer>0)p.shieldTimer--;if(p.shieldCooldown>0)p.shieldCooldown--;}
   if(p.form==='bird'){gameFireTimer--;if(gameFireTimer<=0){const ox=p.x+p.w/2,oy=p.y+p.h/2;for(const angle of [-Math.PI/4,0,Math.PI/4])gameShots.push({x:ox,y:oy,vx:p.facing*Math.cos(angle)*8,vy:Math.sin(angle)*8,r:8,trail:[],life:150});gameFireTimer=30;}}
  }else if(wispInsideStone){
   let dx=(right?1:0)-(left?1:0),dy=(down?1:0)-(up?1:0),len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;p.vx=dx*speed;p.vy=dy*speed;if(dx)p.facing=Math.sign(dx);
@@ -2001,11 +2050,13 @@ function updateGame(){
  }else{
   p.vx=(right?speed:0)-(left?speed:0);if(p.vx)p.facing=Math.sign(p.vx);
   // Space held: keep the jump buffer armed so landing triggers another jump.
-  if(keys.Space)p.jumpBuffer=8;
-  if(p.jumpBuffer>0&&p.onGround){p.vy=p.form==='beetle'?-20.25:-11.5;p.onGround=false;p.jumpBuffer=0;for(const rabbit of gameEnemies)if(rabbit.alive&&rabbit.type==='rabbit'&&rabbit!==gamePossessed&&rabbit.onGround){rabbit.vy=-10.5;rabbit.onGround=false;}}
+  if(p.form!=='mage'&&keys.Space)p.jumpBuffer=8;
+  if(p.form!=='mage'&&p.jumpBuffer>0&&p.onGround){p.vy=p.form==='beetle'?-20.25:-11.5;p.onGround=false;p.jumpBuffer=0;for(const rabbit of gameEnemies)if(rabbit.alive&&rabbit.type==='rabbit'&&rabbit!==gamePossessed&&rabbit.onGround){rabbit.vy=-10.5;rabbit.onGround=false;}}
+  if(p.form==='mage')p.jumpBuffer=0;
   p.vy+=0.62;p.vy=Math.min(p.vy,12);horizontalIntent=p.vx;p.x=Math.max(0,Math.min(gameWorldW-p.w,p.x+p.vx));resolvePlayerHorizontal(p,previousX,horizontalIntent,collisionSolids);
  }
- if(p.form!=='bird'&&p.form!=='mage'&&!wispInsideStone){p.onGround=false;p.y+=p.vy;resolvePlayerVertical(p,previousY,horizontalIntent,collisionSolids);}
+ if(p.form!=='bird'&&!wispInsideStone){p.onGround=false;p.y+=p.vy;resolvePlayerVertical(p,previousY,horizontalIntent,collisionSolids);}
+ if(p.form==='mage'){if(p.shieldTimer>0)p.shieldTimer--;if(p.shieldCooldown>0)p.shieldCooldown--;}
  // Wisp can phase through stone from other directions, but a downward landing
  // stays on the block top unless the player deliberately presses Down.
  if(p.form==='wisp'&&!wispInsideStone&&!down&&p.vy>=0)for(const b of gameBlocks)if(b.type==='stone'&&!b.broken&&gameOverlap(p,b)&&previousY+p.h<=b.y&&hasClearLandingTop(p,b,gameSolids())){p.y=b.y-p.h;p.vy=0;p.onGround=true;}
