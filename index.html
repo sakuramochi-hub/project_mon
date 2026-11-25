@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111a2d">
+<title>空中 - ステージエディタ</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main class="layout" id="layoutRoot">
+ <section class="workspace">
+  <div class="workspace-toolbar">
+   <div class="toolbar-group history-group">
+    <button id="undoBtn" class="icon-btn" title="元に戻す" aria-label="元に戻す">↶</button>
+    <button id="redoBtn" class="icon-btn" title="やり直す" aria-label="やり直す">↷</button>
+   </div>
+   <div class="tool-strip" id="tools" role="toolbar" aria-label="配置ツール">
+   <button class="tool tool-icon-btn active" data-tool="select" title="選択・移動" aria-label="選択・移動"><span class="tool-icon">↖</span><span class="sr-only">選択</span></button>
+   <button class="tool tool-icon-btn" data-tool="hand" title="キャンバス移動" aria-label="キャンバス移動"><span class="tool-icon">✋</span><span class="sr-only">移動</span></button>
+   <button class="tool tool-icon-btn" data-tool="platform" title="地面・足場" aria-label="地面・足場"><span class="tool-icon">🟩</span><span class="sr-only">足場</span></button>
+   <button class="tool tool-icon-btn" data-tool="stone" title="石ブロック" aria-label="石ブロック"><span class="tool-icon">🧱</span><span class="sr-only">石</span></button><button class="tool tool-icon-btn" data-tool="iceBlock" title="氷ブロック" aria-label="氷ブロック"><span class="tool-icon">🧊</span><span class="sr-only">氷</span></button><button class="tool tool-icon-btn" data-tool="bossWall" title="鉄ブロック" aria-label="鉄ブロック"><span class="tool-icon">▦</span><span class="sr-only">鉄ブロック</span></button>
+   <button class="tool tool-icon-btn" data-tool="beetle" title="スライム（味方）" aria-label="スライム"><span class="tool-icon">🟢</span><span class="sr-only">スライム</span></button><button class="tool tool-icon-btn" data-tool="star" title="星（HP回復）" aria-label="星"><span class="tool-icon">⭐</span><span class="sr-only">星</span></button><button class="tool tool-icon-btn" data-tool="nurse" title="ナース（HP全回復・憑依不可）" aria-label="ナース"><span class="tool-icon">🩷</span><span class="sr-only">ナース</span></button><button class="tool tool-icon-btn" data-tool="mage" title="魔導士（味方）" aria-label="魔導士"><span class="tool-icon">🧙🏻</span><span class="sr-only">魔導士</span></button><button class="tool tool-icon-btn" data-tool="enemySlime" title="敵スライム" aria-label="敵スライム"><span class="tool-icon">⚫</span><span class="sr-only">敵スライム</span></button><button class="tool tool-icon-btn" data-tool="rabbit" title="ウサギ" aria-label="ウサギ"><span class="tool-icon">🐇</span><span class="sr-only">ウサギ</span></button><button class="tool tool-icon-btn" data-tool="archer" title="アーチャー" aria-label="アーチャー"><span class="tool-icon">🏹</span><span class="sr-only">アーチャー</span></button><button class="tool tool-icon-btn" data-tool="witch" title="ウィッチ" aria-label="ウィッチ"><span class="tool-icon">🧙</span><span class="sr-only">ウィッチ</span></button>
+   <button class="tool tool-icon-btn" data-tool="wisp" title="ウィスプ（味方）" aria-label="ウィスプ"><span class="tool-icon">👻</span><span class="sr-only">ウィスプ</span></button><button class="tool tool-icon-btn" data-tool="bat" title="コウモリ" aria-label="コウモリ"><span class="tool-icon">🦇</span><span class="sr-only">コウモリ</span></button><button class="tool tool-icon-btn" data-tool="bird" title="赤い鳥" aria-label="赤い鳥"><span class="tool-icon">🐦</span><span class="sr-only">赤い鳥</span></button><button class="tool tool-icon-btn" data-tool="drone" title="ドローン" aria-label="ドローン"><span class="tool-icon">◇</span><span class="sr-only">ドローン</span></button><button class="tool tool-icon-btn" data-tool="redDrone" title="赤色ドローン" aria-label="赤色ドローン"><span class="tool-icon">🔴</span><span class="sr-only">赤ドローン</span></button><button class="tool tool-icon-btn" data-tool="bigDrone" title="大型ドローン" aria-label="大型ドローン"><span class="tool-icon">💠</span><span class="sr-only">大型ドローン</span></button><button class="tool tool-icon-btn" data-tool="boss" title="ボス：機械要塞" aria-label="ボス：機械要塞"><span class="tool-icon">🏰</span><span class="sr-only">機械要塞ボス</span></button><button class="tool tool-icon-btn" data-tool="armorBoss" title="ボス：アーマー" aria-label="ボス：アーマー"><span class="tool-icon">🦾</span><span class="sr-only">アーマー</span></button><button class="tool tool-icon-btn" data-tool="dragonBoss" title="ボス：ティアマット" aria-label="ボス：ティアマット"><span class="tool-icon">🐉</span><span class="sr-only">ティアマット</span></button><button class="tool tool-icon-btn" data-tool="bossDoor" title="ボス部屋の入口" aria-label="ボス部屋の入口"><span class="tool-icon">🌀</span><span class="sr-only">ボス入口</span></button>
+   <button class="tool tool-icon-btn" data-tool="start" title="スタート" aria-label="スタート"><span class="tool-icon">🚩</span><span class="sr-only">開始</span></button>
+   <button class="tool tool-icon-btn" data-tool="goal" title="ゴール" aria-label="ゴール"><span class="tool-icon">🚪</span><span class="sr-only">ゴール</span></button>
+   <button class="tool tool-icon-btn" data-tool="erase" title="消しゴム" aria-label="消しゴム"><span class="tool-icon">⌫</span><span class="sr-only">削除</span></button>
+  
+   </div>
+   <div class="toolbar-group view-controls">
+    <label class="grid-toggle" title="グリッド表示" aria-label="グリッド表示">▦<input id="gridToggle" type="checkbox" checked></label>
+    <select id="zoom" class="zoom-select" aria-label="表示倍率"><option value="auto">自動</option><option value="1">100%</option><option value="0.8">80%</option><option value="0.6">60%</option></select>
+    <button id="testBtn" class="icon-btn primary" title="テストプレイ" aria-label="テストプレイ">▶</button>
+    <button id="stopTestBtn" class="icon-btn hidden" title="編集に戻る" aria-label="編集に戻る">■</button>
+   </div>
+   <div class="toolbar-group utility-actions" aria-label="ステージ操作">
+    <button id="newBtn" class="icon-btn" title="新規ステージ" aria-label="新規ステージ">＋</button>
+    <button id="loadTrigger" class="icon-btn" title="JSONを読み込む" aria-label="JSONを読み込む">📂</button>
+    <button id="saveBtn" class="icon-btn primary" title="JSONを書き出す" aria-label="JSONを書き出す">💾</button>
+    <button id="settingsToggle" class="icon-btn" title="ステージ設定" aria-label="ステージ設定">⚙</button>
+    <button id="inspectorToggle" class="icon-btn" title="パーツ情報" aria-label="パーツ情報">▤</button>
+   </div>
+   <input id="loadFile" type="file" accept=".json,application/json" class="hidden">
+  </div>
+  <div class="canvas-wrap" id="canvasWrap">
+   <canvas id="editor" width="600" height="560" aria-hidden="true"></canvas>
+   <div id="editorDom" role="img" aria-label="ステージ編集キャンバス">
+    <div id="editorBootMessage">ステージを読み込んでいます…</div>
+   </div>
+  </div>
+  <div id="notice"><span id="noticeText">ツールを選び、パーツを配置してください。</span><div class="status-right"><span class="small">← → / Space / E</span></div></div>
+ </section>
+ <aside class="panel right" id="inspectorPanel">
+  <div>
+   <h2>選択中のパーツ</h2>
+   <div id="selectionInfo" class="stat">パーツが選択されていません</div>
+   <div id="props" class="hidden">
+    <label class="field" for="propX">X座標（マス）</label><input type="number" id="propX" min="0">
+    <label class="field" for="propY">Y座標（マス）</label><input type="number" id="propY" min="0">
+    <label class="field" for="propW">横幅（マス）</label><input type="number" id="propW" min="1">
+    <label class="field" for="propH">高さ（マス）</label><input type="number" id="propH" min="1">
+    <button id="applyProps" style="width:100%;margin-top:9px">変更を適用</button>
+    <button id="deleteSelected" class="danger" style="width:100%;margin-top:7px">このパーツを削除</button>
+   </div>
+  </div>
+  <div class="section"><h2>ステージ情報</h2><div class="stat" id="stats"></div>
+   <p class="small">敵に憑依して能力を使います。スライムは約8マス高くジャンプし、ウィスプは石を通過して中を自由に飛べます。</p>
+  </div>
+ </aside>
+</main>
+<aside class="panel settings-panel" id="settingsPanel">
+ <h2>ステージ設定</h2>
+ <label class="field" for="stageName">ステージ名</label><input id="stageName" type="text" value="空中" maxlength="40">
+ <label class="field" for="worldWidth">横幅（マス）</label><input id="worldWidth" type="number" min="30" max="150" value="150">
+ <div class="setting-actions"><button id="resizeBtn">横幅を適用</button></div>
+ <div id="editorHelp"><h2>編集のヒント</h2><p class="small">足場・ブロック・敵を選んでタップすると配置。選択ツールでパーツをドラッグして移動。空白部分をドラッグすると画面をスクロールできます。スタートとゴールは各1つです。</p></div>
+</aside>
+<div class="touch-controls hidden" id="touchControls" aria-label="テストプレイ操作">
+ <div class="move-pad"><div class="move-row"><button data-key="ArrowLeft" aria-label="左">◀</button><button data-key="ArrowRight" aria-label="右">▶</button></div><div class="move-row"><button data-key="ArrowUp" aria-label="上">▲</button><button data-key="ArrowDown" aria-label="下">▼</button></div></div>
+ <div class="action-pad"><button data-key="KeyE" aria-label="憑依">E</button><button data-key="Space" aria-label="向き固定／ジャンプ">⤒</button></div>
+</div>
+<script src="js/config.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
